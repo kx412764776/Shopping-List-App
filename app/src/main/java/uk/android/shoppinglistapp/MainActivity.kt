@@ -6,7 +6,14 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.dialog
+import androidx.navigation.compose.rememberNavController
 import uk.android.shoppinglistapp.ui.theme.ShoppingListAppTheme
 
 class MainActivity : ComponentActivity() {
@@ -19,8 +26,37 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    ShoppingListApp()
+                    Navigation()
                 }
+            }
+        }
+    }
+}
+
+@Composable
+fun Navigation() {
+    val navController = rememberNavController()
+    val viewModel: LocationViewModel = viewModel()
+    val context = LocalContext.current
+    val locationUtils = LocationUtils(context)
+
+    NavHost(navController = navController, startDestination = "shoppinglist_screen") {
+        composable("shoppinglist_screen") {
+            ShoppingListApp(
+                locationUtils = locationUtils,
+                viewModel = viewModel,
+                navController = navController,
+                context = context,
+                address = viewModel.address.value.firstOrNull()?.formatted_address ?: "No address"
+            )
+        }
+
+        dialog("location_screen") {backstack ->
+            viewModel.location.value?.let {it1 -> 
+                LocationSelectionScreen(location = it1, onLocationSelected = {
+                    viewModel.fetchAddress("${it.latitude},${it.longitude}")
+                    navController.popBackStack()
+                })
             }
         }
     }
